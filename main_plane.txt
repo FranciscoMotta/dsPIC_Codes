@@ -1,0 +1,29 @@
+/*
+ * File:   main.c
+ * Author: jmott
+ *
+ * Created on September 30, 2023, 2:06 PM
+ */
+
+/* includes */
+
+#include "system_config.h"
+#include <libpic30.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+/* Declaracion de funciones */
+
+/* Main */
+
+int main(void) 
+{
+    while(true)
+    {
+
+    }
+    return EXIT_SUCCESS;
+}
+
+/* Definicion de funciones */
