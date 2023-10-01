@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* Macros */
 
@@ -29,6 +30,14 @@
 
 #define Enable_Toggle() Lcd_En_Pin = 1; __delay_ms(1); Lcd_En_Pin = 0;
 
+/* Macros del Sensor HC-SR04 */
+
+#define Ultrasound_Trigger_Pin   LATBbits.LATB9
+#define Ultrasound_Trigger_Tris  TRISBbits.TRISB9
+
+#define Ultrasound_Echo_Pin      PORTBbits.RB10
+#define Ultrasound_Echo_Tris     TRISBbits.TRISB10
+
 /* Declaracion de funciones */
 
 void Init_Gpio(void);
@@ -36,49 +45,82 @@ void Send_Nibble(char byte);
 void LCD_Send_Command(char command);
 void LCD_Send_Character(char character);
 void LCD_Init_Screen(void);
-void LCD_Set_Cursor (uint8_t x, uint8_t y);
-void LCD_Send_String (char *string);
+void LCD_Set_Cursor(uint8_t x, uint8_t y);
+void LCD_Send_String(char *string);
+
+void Init_Sensor_HC_SR04(void);
+
+/* Variables */
+
+char mensaje[16];
+
+/* Uso del sprintf
+ * #include <stdio.h>
+    #include <math.h>
+
+    int main () {
+       char str[80];
+
+       sprintf(str, "Value of Pi = %f", M_PI);
+       puts(str);
+
+       return(0);
+    }
+ *  */
 
 /* Main */
 
 int main(void) {
     /* Iniciamos el LCD */
     LCD_Init_Screen();
-    LCD_Set_Cursor(0,0);
-    LCD_Send_String("Hola");
+    LCD_Set_Cursor(0, 0);
+    LCD_Send_String("Medidor :D");
+    /* Iniciamos el sensor */
+    Init_Sensor_HC_SR04();
+    uint8_t cuenta = 0;
+    uint16_t distancia = 0;
     /* Bucle principal */
     while (true) {
         Led_Sys_Pin = !Led_Sys_Pin;
-        __delay_ms(500);
+        Ultrasound_Trigger_Pin = 1;
+        __delay_us(10);
+        Ultrasound_Trigger_Pin = 0;
+        while (Ultrasound_Echo_Pin == 0);
+        while (Ultrasound_Echo_Pin == 1) {
+            __delay_us(58);
+            distancia++;
+        }
+        LCD_Set_Cursor(0, 1);
+        sprintf(mensaje, "dist = %3u cm", distancia);
+        LCD_Send_String(mensaje);
+        distancia = 0;
+        __delay_ms(100);
     }
     return EXIT_SUCCESS;
 }
 
 /* Definicion de funciones */
 
-void LCD_Send_String (char *string)
-{
+void Init_Sensor_HC_SR04(void) {
+    Ultrasound_Echo_Tris = 1; // El echo es entrada
+    Ultrasound_Trigger_Tris = 0; // El trigger es salida
+}
+
+void LCD_Send_String(char *string) {
     uint8_t index = 0;
-    while(string[index] != '\0')
-    {
+    while (string[index] != '\0') {
         LCD_Send_Character(string[index]);
         index++;
     }
 }
 
-void LCD_Set_Cursor (uint8_t x, uint8_t y)
-{
+void LCD_Set_Cursor(uint8_t x, uint8_t y) {
     char position = 0;
-    if(y == 0)
-    {
+    if (y == 0) {
         position = 0x80; // Primera linea
-    }
-    else if (y == 1)
-    {
+    } else if (y == 1) {
         position = 0xC0; // Segunda linea
-    }
-    else
-    {
+    } else {
         position = 0x80;
     }
     position += x;
@@ -126,8 +168,8 @@ void Send_Nibble(char byte) {
 }
 
 void Init_Gpio(void) {
-    /* Puerto B como salida */
-    ADPCFG = 0x0000;
+    /* Puerto B como digital*/
+    ADPCFG = 0xFFFF;
     /* Iniciamos el LED del systema */
     Led_Sys_Tris = 0; // Led como salida
     /* Apagar el LED */
